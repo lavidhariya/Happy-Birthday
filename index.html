@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Netflix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Great+Vibes&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --netflix-red: #e50914;
+      --netflix-red-hover: #f40612;
+      --bg-dark: #141414;
+      --bg-card: #181818;
+      --bg-modal: #181818;
+      --text-main: #ffffff;
+      --text-muted: #b3b3b3;
+      --text-dim: #808080;
+      --match-green: #46d369;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Inter', "Helvetica Neue", Helvetica, Arial, sans-serif;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button { font-family: inherit; border: none; background: none; color: inherit; cursor: pointer; }
+
+    /* ---------- Screen system ---------- */
+    .screen {
+      position: fixed;
+      inset: 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 1;
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 2;
+    }
+
+    /* ---------- Intro (Tudum Animation) ---------- */
+    #intro {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.7s ease;
+    }
+
+    #intro video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      background: #000;
+      filter: contrast(1.12) saturate(1.08);
+    }
+
+    .intro-controls {
+      position: absolute;
+      right: 36px;
+      bottom: 36px;
+      display: flex;
+      gap: 12px;
+      z-index: 102;
+    }
+
+    .intro-btn {
+      padding: 9px 20px;
+      background: rgba(20, 20, 20, 0.75);
+      color: #fff;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      backdrop-filter: blur(6px);
+      transition: all 0.2s ease;
+    }
+
+    .intro-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: #fff;
+      transform: scale(1.03);
+    }
+
+    #intro.hidden { opacity: 0; pointer-events: none; }
+
+    /* ---------- Profile Selection ---------- */
+    #profiles {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #1f1f1f 0%, #141414 75%);
+    }
+
+    .profiles-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      padding: 0 4%;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+    }
+
+    .netflix-logo { height: 32px; width: auto; cursor: pointer; }
+
+    .profiles-container {
+      text-align: center;
+      animation: profileFadeIn 0.4s ease-out;
+    }
+
+    @keyframes profileFadeIn {
+      from { opacity: 0; transform: scale(1.06); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    #profiles h1 {
+      font-weight: 500;
+      font-size: clamp(30px, 3.5vw, 56px);
+      color: #fff;
+      margin-bottom: 38px;
+    }
+
+    .profile-list {
+      display: flex;
+      gap: 2.2vw;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0 20px;
+    }
+
+    .profile {
+      width: 10.5vw;
+      min-width: 120px;
+      max-width: 180px;
+      text-align: center;
+      color: var(--text-dim);
+      transition: color 0.2s ease;
+    }
+
+    .avatar {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      border-radius: 4px;
+      overflow: hidden;
+      border: 3px solid transparent;
+      transition: border-color 0.18s ease, transform 0.2s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .avatar img, .avatar svg {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+
+    .avatar.red { background: linear-gradient(145deg, #e50914, #8b050b); }
+    .avatar.blue { background: linear-gradient(145deg, #2172d9, #10428a); }
+    .avatar.gold { background: linear-gradient(145deg, #e8a812, #9e6b05); }
+    .avatar.green { background: linear-gradient(145deg, #27b562, #126b36); }
+
+    .profile-name {
+      margin-top: 12px;
+      font-size: clamp(14px, 1.2vw, 19px);
+      font-weight: 400;
+    }
+
+    .profile:hover, .profile:focus-visible { color: #e5e5e5; outline: none; }
+    .profile:hover .avatar, .profile:focus-visible .avatar { border-color: #e5e5e5; transform: scale(1.04); }
+
+    .manage-btn {
+      margin-top: 56px;
+      padding: 10px 28px;
+      color: var(--text-dim);
+      border: 1px solid var(--text-dim);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+    .manage-btn:hover { color: #fff; border-color: #fff; }
+
+    /* ---------- Browse Screen ---------- */
+    #browse {
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: var(--bg-dark);
+      scroll-behavior: smooth;
+    }
+
+    #browse::-webkit-scrollbar { width: 8px; }
+    #browse::-webkit-scrollbar-track { background: #141414; }
+    #browse::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+    /* Top Navigation */
+    .top-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 68px;
+      padding: 0 4% 0 88px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.85) 10%, transparent);
+      transition: background-color 0.35s ease;
+      z-index: 20;
+    }
+
+    .top-nav.scrolled {
+      background-color: #141414;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.7);
+    }
+
+    .nav-left { display: flex; align-items: center; gap: 32px; }
+    .nav-links { display: flex; gap: 20px; list-style: none; font-size: 14px; }
+    .nav-links li { color: #e5e5e5; cursor: pointer; transition: color 0.2s; }
+    .nav-links li:hover { color: #b3b3b3; }
+    .nav-links li.active { color: #fff; font-weight: 700; }
+
+    .nav-right { display: flex; align-items: center; gap: 22px; }
+    .nav-icon-btn { color: #fff; display: flex; align-items: center; justify-content: center; position: relative; transition: transform 0.2s; }
+    .nav-icon-btn:hover { transform: scale(1.1); }
+    .notif-dot { position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; border-radius: 50%; background: var(--netflix-red); }
+
+    .active-profile-pill {
+      display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 8px; border-radius: 4px; transition: background 0.2s;
+    }
+    .active-profile-pill:hover { background: rgba(255,255,255,0.1); }
+    .mini-avatar { width: 32px; height: 32px; border-radius: 4px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .caret { border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid #fff; transition: transform 0.2s; }
+    .active-profile-pill:hover .caret { transform: rotate(180deg); }
+
+    /* Left Icon Rail */
+    .rail {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: 68px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 26px;
+      background: linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.45) 75%, transparent);
+      z-index: 21;
+    }
+
+    .rail-icon {
+      width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; color: #999; cursor: pointer; border-radius: 8px; position: relative; transition: all 0.2s;
+    }
+    .rail-icon svg { width: 22px; height: 22px; stroke-width: 2; }
+    .rail-icon:hover { color: #fff; transform: scale(1.1); }
+    .rail-icon.active { color: #fff; }
+    .rail-icon.active::after {
+      content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3.5px; background: var(--netflix-red); border-radius: 0 3px 3px 0; box-shadow: 0 0 8px var(--netflix-red);
+    }
+
+    /* ---------- Hero Billboard ---------- */
+    .hero {
+      position: relative;
+      height: auto;
+      min-height: 600px;
+      overflow: hidden;
+      background: #0a0a0a;
+      display: flex;
+      align-items: flex-start;
+      padding: clamp(92px, 12vh, 128px) 4% 80px 92px;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: url("image/Tender Monochrome Couple Portrait.png") 100% 45% / cover no-repeat;
+      transform-origin: right center;
+      animation: heroPan 18s ease-in-out infinite;
+      filter: brightness(0.95) contrast(1.06);
+    }
+
+    @keyframes heroPan {
+      from {
+        background-position: 92% 40%;
+        transform: scale(1);
+      }
+      to {
+        background-position: 100% 40%;
+        transform: scale(1);
+      }
+    }
+
+    .hero::before {
+      content: ""; position: absolute; inset: 0;
+      background: radial-gradient(circle at 72% 38%, transparent 15%, rgba(20,20,20,0.55) 65%, #141414 98%), linear-gradient(77deg, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.72) 34%, rgba(0,0,0,0.2) 58%, transparent 82%);
+      z-index: 1;
+    }
+
+    .hero::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 28vh;
+      background: linear-gradient(180deg, rgba(20,20,20,0) 0%, rgba(20,20,20,0.65) 45%, #141414 95%);
+      z-index: 1;
+    }
+
+    .hero-content { position: relative; z-index: 2; max-width: 610px; }
+
+    .n-series-tag { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; font-weight: 800; letter-spacing: 4.5px; color: #d8d8d8; }
+    .n-letter { font-family: 'Bebas Neue', sans-serif; color: var(--netflix-red); font-size: 28px; line-height: 1; letter-spacing: 0; text-shadow: 0 2px 8px rgba(229,9,20,0.5); }
+
+    .hero-script {
+      font-family: 'Great Vibes', cursive;
+      font-size: clamp(48px, 6.2vw, 92px);
+      line-height: 1.02;
+      color: #fff;
+      text-shadow: 0 4px 24px rgba(0,0,0,0.85), 0 0 40px rgba(255,111,165,0.35);
+      margin-bottom: 16px;
+    }
+    .hero-script span { color: #ff6fa5; }
+
+    .metadata-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; font-size: 14px; font-weight: 600; color: #bcbcbc; }
+    .match-score { color: var(--match-green); font-weight: 700; }
+    .maturity-box { border: 1px solid rgba(255,255,255,0.45); padding: 1px 6px; font-size: 12px; color: #e5e5e5; }
+    .quality-pill { border: 1px solid rgba(255,255,255,0.45); border-radius: 3px; padding: 0 5px; font-size: 10px; font-weight: 700; color: #e5e5e5; }
+
+    .badge-row { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 14px; }
+    .top10-badge { background: var(--netflix-red); color: #fff; font-size: 10px; font-weight: 800; line-height: 1.05; text-align: center; padding: 4px 6px; border-radius: 2px; }
+    .top10-badge span { font-size: 14px; display: block; }
+
+    .hero-desc { font-size: clamp(14px, 1.1vw, 17px); line-height: 1.5; color: rgba(255,255,255,0.92); margin-bottom: 16px; text-shadow: 0 1px 4px rgba(0,0,0,0.8); }
+    .meta-cast { font-size: 13.5px; color: #a3a3a3; line-height: 1.65; margin-bottom: 22px; }
+    .meta-cast strong { color: #777; font-weight: 500; }
+    .meta-cast span { color: #e5e5e5; }
+
+    .hero-buttons { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 11px 28px; border-radius: 4px; font-size: 16px; font-weight: 700; transition: background 0.18s, transform 0.15s; }
+    .btn svg { width: 22px; height: 22px; fill: currentColor; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-play { background: #fff; color: #000; }
+    .btn-play:hover { background: rgba(255,255,255,0.78); }
+
+    .btn-info { background: rgba(109,109,110,0.7); color: #fff; backdrop-filter: blur(4px); }
+    .btn-info:hover { background: rgba(109,109,110,0.45); }
+
+    .btn-circle {
+      width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.55); background: rgba(42,42,42,0.6); color: #fff; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
+    }
+    .btn-circle:hover { border-color: #fff; background: rgba(255,255,255,0.15); transform: scale(1.06); }
+    .btn-circle.active { border-color: var(--match-green); color: var(--match-green); }
+
+    .hero-right-badge { position: absolute; right: 0; bottom: 18%; z-index: 3; display: flex; align-items: center; gap: 14px; }
+    .maturity-ribbon { background: rgba(51,51,51,0.65); border-left: 3px solid #dcdcdc; padding: 7px 38px 7px 14px; font-size: 14px; font-weight: 500; color: #fff; backdrop-filter: blur(4px); }
+
+    /* ---------- Content Rows & Cards ---------- */
+    .rows-wrapper { position: relative; z-index: 4; margin-top: 0; padding-bottom: 70px; }
+    .row { position: relative; padding: 14px 4% 28px 92px; }
+    .row-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+    .row h2 { font-size: clamp(18px, 1.4vw, 22px); font-weight: 600; color: #e5e5e5; }
+    .explore-all { font-size: 12px; font-weight: 600; color: #54b9c5; opacity: 0; transform: translateX(-8px); transition: all 0.25s; }
+    .row:hover .explore-all { opacity: 1; transform: translateX(0); }
+
+    .card-row { display: flex; gap: 10px; overflow-x: auto; padding: 18px 4px 28px; margin: -18px -4px -28px; scrollbar-width: none; }
+    .card-row::-webkit-scrollbar { display: none; }
+
+    .card {
+      position: relative; flex: 0 0 auto; width: 270px; border-radius: 6px; background: var(--bg-card); overflow: hidden; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,0.5); transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 0.3s;
+    }
+    .card:hover { transform: scale(1.12) translateY(-6px); z-index: 10; box-shadow: 0 14px 32px rgba(0,0,0,0.85); }
+
+    .card-thumb { position: relative; width: 100%; height: 152px; overflow: hidden; background-size: cover; background-position: center; }
+    .card-thumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(24,24,24,0.95) 0%, transparent 55%); }
+    .card-n-badge { position: absolute; top: 8px; left: 10px; font-family: 'Bebas Neue', sans-serif; color: var(--netflix-red); font-size: 22px; z-index: 2; text-shadow: 0 2px 6px rgba(0,0,0,0.9); }
+    .card-ep-tag { position: absolute; bottom: 8px; left: 10px; font-size: 11px; font-weight: 700; color: #e5e5e5; z-index: 2; }
+    .card-duration { position: absolute; bottom: 8px; right: 10px; font-size: 11px; color: #bdbdbd; z-index: 2; }
+    .card-progress { position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: rgba(255,255,255,0.25); z-index: 3; }
+    .card-progress span { display: block; height: 100%; background: var(--netflix-red); }
+
+    .card-body { padding: 12px; }
+    .card-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .mini-btn { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.5); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; color: #fff; background: rgba(42,42,42,0.7); transition: all 0.15s; }
+    .mini-btn.play { background: #fff; color: #000; border-color: #fff; }
+    .mini-btn:hover { border-color: #fff; transform: scale(1.08); }
+
+    .card-title { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+    .card-sub { font-size: 12px; color: var(--text-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-tags { margin-top: 8px; font-size: 11px; color: #9e9e9e; }
+    .card-tags span { color: var(--match-green); font-weight: 700; margin-right: 6px; }
+
+    /* Top 10 Row */
+    .top10-card { flex: 0 0 auto; width: 230px; height: 200px; position: relative; display: flex; align-items: center; cursor: default; transition: transform 0.25s; }
+    .top10-card:hover { transform: scale(1.08); z-index: 6; }
+    .top10-card:nth-child(10) .rank-num { font-size: 178px; letter-spacing: -14px; transform: translateX(2px); }
+    .rank-num { font-family: 'Bebas Neue', Impact, sans-serif; font-size: 210px; line-height: 1; color: #000; -webkit-text-stroke: 4px #595959; letter-spacing: -12px; user-select: none; z-index: 1; transform: translateX(10px); }
+    .top10-poster { width: 132px; height: 188px; border-radius: 5px; overflow: hidden; position: relative; z-index: 2; box-shadow: -6px 4px 16px rgba(0,0,0,0.75); background-size: cover; background-position: center; display: flex; flex-direction: column; justify-content: flex-end; padding: 10px; }
+    .top10-poster::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.15) 60%, transparent); }
+    .poster-label { position: relative; z-index: 2; font-size: 13px; font-weight: 700; color: #fff; line-height: 1.2; }
+    .poster-sub { position: relative; z-index: 2; font-size: 10px; color: #ff6fa5; font-weight: 600; margin-top: 2px; }
+
+    /* ---------- More Info Modal ---------- */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 40; display: flex; justify-content: center; overflow-y: auto; padding: 36px 16px; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal-box { width: 100%; max-width: 850px; background: var(--bg-modal); border-radius: 10px; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.9); height: fit-content; transform: scale(0.95); transition: transform 0.3s; }
+    .modal-backdrop.open .modal-box { transform: scale(1); }
+
+    .modal-hero { position: relative; height: 400px; background: url("image/Tender Monochrome Couple Portrait.png") center 48% / cover no-repeat; display: flex; align-items: flex-end; padding: 32px; }
+    .modal-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, #181818 5%, rgba(24,24,24,0.3) 55%, rgba(0,0,0,0.4) 100%); }
+    .modal-close { position: absolute; top: 18px; right: 18px; width: 36px; height: 36px; border-radius: 50%; background: #181818; color: #fff; font-size: 20px; display: flex; align-items: center; justify-content: center; z-index: 3; }
+    .modal-close:hover { background: #333; }
+    .modal-hero-content { position: relative; z-index: 2; width: 100%; }
+
+    .modal-body { padding: 24px 32px 36px; }
+    .modal-grid { display: grid; grid-template-columns: 1.8fr 1fr; gap: 28px; margin-bottom: 32px; }
+    .ep-list-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 12px; margin-bottom: 12px; }
+    .ep-item { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 6px; border-bottom: 1px solid #2b2b2b; cursor: pointer; transition: background 0.2s; }
+    .ep-item:hover { background: #262626; }
+    .ep-num { font-size: 22px; font-weight: 600; color: #808080; width: 24px; text-align: center; }
+    .ep-thumb { width: 130px; height: 74px; border-radius: 4px; background-size: cover; background-position: center; flex-shrink: 0; position: relative; display: flex; align-items: center; justify-content: center; }
+    .ep-info { flex: 1; }
+    .ep-info-top { display: flex; justify-content: space-between; font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .ep-info p { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+
+    /* ---------- Video Player ---------- */
+    #player { background: #000; cursor: none; }
+    #player.controls-visible { cursor: auto; }
+    #main-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+    .video-error { position: absolute; top: 50%; left: 50%; z-index: 2; width: min(560px, 85%); transform: translate(-50%, -50%); padding: 18px 22px; border-radius: 6px; background: rgba(20,20,20,0.92); color: #fff; text-align: center; font-size: 15px; line-height: 1.5; display: none; }
+    .video-error.visible { display: block; }
+
+    .player-overlay {
+      position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, rgba(0,0,0,0.78) 0%, transparent 22%), linear-gradient(to top, rgba(0,0,0,0.88) 0%, transparent 28%); transition: opacity 0.35s ease;
+    }
+    .player-overlay.hidden { opacity: 0; }
+
+    .player-top { position: absolute; top: 28px; left: 32px; right: 32px; display: flex; align-items: center; gap: 20px; pointer-events: auto; }
+    .back-btn { color: #fff; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s, transform 0.2s; }
+    .back-btn:hover { background: rgba(255,255,255,0.12); transform: scale(1.08); }
+    .player-title { font-size: 20px; font-weight: 700; }
+    .player-title span { font-weight: 400; color: #bdbdbd; margin-left: 8px; }
+
+    .player-bottom { position: absolute; left: 32px; right: 32px; bottom: 28px; pointer-events: auto; }
+    .seek-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; }
+    #seek { flex: 1; height: 5px; accent-color: var(--netflix-red); cursor: pointer; }
+    .time { font-size: 14px; color: #e5e5e5; font-variant-numeric: tabular-nums; min-width: 95px; text-align: right; }
+
+    .controls-row { display: flex; align-items: center; justify-content: space-between; }
+    .controls-left, .controls-right { display: flex; align-items: center; gap: 24px; }
+    .control { color: #fff; font-size: 15px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; transition: color 0.15s, transform 0.15s; }
+    .control:hover { color: #fff; transform: scale(1.08); }
+    .control svg { width: 26px; height: 26px; fill: currentColor; }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: #fff; color: #000; padding: 10px 22px; border-radius: 4px; font-size: 14px; font-weight: 600; box-shadow: 0 8px 25px rgba(0,0,0,0.6); opacity: 0; pointer-events: none; transition: all 0.25s ease; z-index: 120;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .rail { width: 52px; }
+      .top-nav { padding-left: 64px; }
+      .hero { padding: 92px 4% 72px 66px; height: auto; }
+      .row { padding-left: 66px; }
+      .modal-grid { grid-template-columns: 1fr; }
+      .hero-right-badge { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. INTRO: Tudum Video Animation -->
+  <div id="intro">
+    <video id="intro-video" playsinline preload="auto">
+      <source src="Netflix%20New%20Logo%20Animation%202019_1080p.mp4" type="video/mp4">
+    </video>
+    <div class="intro-controls">
+      <button id="unmute-intro-btn" class="intro-btn" type="button">Unmute</button>
+      <button id="skip-btn" class="intro-btn" type="button">Skip Intro</button>
+    </div>
+  </div>
+
+  <!-- 2. PROFILE SELECTION SCREEN -->
+  <main id="profiles" class="screen">
+    <header class="profiles-header">
+      <img class="netflix-logo" src="Netflix_2015_logo.svg" alt="Netflix">
+    </header>
+
+    <div class="profiles-container">
+      <h1>Who's watching?</h1>
+      <div class="profile-list">
+        <button class="profile" type="button" data-profile="My Love" data-color="red">
+          <div class="avatar red">
+            <img src="image/20261103_020926.png" alt="" onerror="this.remove()">
+            <svg viewBox="0 0 100 100"><circle cx="32" cy="38" r="5" fill="#fff"/><circle cx="68" cy="38" r="5" fill="#fff"/><path d="M 28 60 Q 50 78 72 60" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+          </div>
+          <div class="profile-name">My Love</div>
+        </button>
+
+        <button class="profile" type="button" data-profile="My Home" data-color="blue">
+          <div class="avatar blue">
+            <img src="image/20261103_021259.jpeg" alt="" onerror="this.remove()">
+            <svg viewBox="0 0 100 100"><circle cx="32" cy="38" r="5" fill="#fff"/><circle cx="68" cy="38" r="5" fill="#fff"/><path d="M 30 62 Q 50 76 70 62" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+          </div>
+          <div class="profile-name">My Home</div>
+        </button>
+
+        <button class="profile" type="button" data-profile="Forever Us" data-color="gold">
+          <div class="avatar gold">
+            <img src="image/Snapchat-1592831499.jpeg" alt="" onerror="this.remove()">
+            <svg viewBox="0 0 100 100"><circle cx="32" cy="38" r="5" fill="#fff"/><circle cx="68" cy="38" r="5" fill="#fff"/><path d="M 26 58 Q 50 80 74 58" stroke="#fff" stroke-width="5" stroke-linecap="round" fill="none"/></svg>
+          </div>
+          <div class="profile-name">Forever Us</div>
+        </button>
+
+      </div>
+
+      <button class="manage-btn" type="button" id="manage-profiles-btn">Manage Profiles</button>
+    </div>
+  </main>
+
+  <!-- 3. BROWSE / SHOW SCREEN -->
+  <main id="browse" class="screen">
+    <header class="top-nav" id="top-nav">
+      <div class="nav-left">
+        <img class="netflix-logo" src="Netflix_2015_logo.svg" alt="Netflix" id="home-logo">
+        <ul class="nav-links">
+          <li class="active">Home</li>
+          <li>Our Story</li>
+          <li>Episodes</li>
+          <li>Romantic Flashbacks</li>
+          <li id="nav-mylist">My List</li>
+        </ul>
+      </div>
+
+      <div class="nav-right">
+        <button class="nav-icon-btn" title="Notifications" type="button">
+          <span class="notif-dot"></span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+
+        <div class="active-profile-pill" id="switch-profile-btn" title="Switch Profile">
+          <div class="mini-avatar" id="active-mini-avatar" style="background: linear-gradient(145deg, #e50914, #8b050b);">
+            <svg width="22" height="22" viewBox="0 0 100 100"><circle cx="32" cy="38" r="6" fill="#fff"/><circle cx="68" cy="38" r="6" fill="#fff"/><path d="M 28 60 Q 50 78 72 60" stroke="#fff" stroke-width="6" stroke-linecap="round" fill="none"/></svg>
+          </div>
+          <span id="active-profile-label" style="font-size: 13px; font-weight: 500;">My Love</span>
+          <span class="caret"></span>
+        </div>
+      </div>
+    </header>
+
+    <aside class="rail">
+      <div class="rail-icon" title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+      <div class="rail-icon active" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+      <div class="rail-icon" title="Trending"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+      <div class="rail-icon" title="Episodes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></div>
+    </aside>
+
+    <section class="hero">
+      <div class="hero-bg"></div>
+      <div class="hero-content">
+        <div class="n-series-tag"><span class="n-letter">N</span><span>ORIGINAL SERIES</span></div>
+        <div class="hero-script">Happy Birthday<br><span>My Love!</span></div>
+
+        <div class="metadata-bar">
+          <span class="match-score">100% Match</span>
+          <span>2026</span>
+          <span class="maturity-box">U/A 16+</span>
+          <span>Limited Series</span>
+          <span class="quality-pill">4K HDR</span>
+          <span class="quality-pill">Spatial Audio</span>
+        </div>
+
+        <div class="badge-row">
+          <div class="top10-badge">TOP<span>10</span></div>
+          <span>#1 Couple of the Year</span>
+        </div>
+
+        <p class="hero-desc">
+          Every year with you feels like a beautiful chapter in our story — full of unscripted laughter, late-night talks, growth, and quiet moments that mean everything. You are my favorite person, my greatest comfort, and the best part of every single day.
+        </p>
+
+        <div class="meta-cast">
+          <div><strong>Starring:</strong> <span>Donny & Lavi</span></div>
+          <div><strong>Genres:</strong> <span>Romantic Flashbacks, Crazy Memories, Soulmates</span></div>
+          <div><strong>Release:</strong> <span>26th Nov 2026 &bull; 100% Couple Goals</span></div>
+        </div>
+
+        <div class="hero-buttons">
+          <button class="btn btn-play" type="button" id="play-btn">
+            <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play
+          </button>
+          <button class="btn btn-info" type="button" id="more-info-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>More Info
+          </button>
+          <button class="btn-circle" type="button" id="mylist-btn" title="Add to My List">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+          <button class="btn-circle" type="button" id="like-btn" title="Love this">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-right-badge">
+        <div class="maturity-ribbon">U/A 16+</div>
+      </div>
+    </section>
+
+    <!-- Rows -->
+    <div class="rows-wrapper">
+      <section class="row">
+        <div class="row-header">
+          <h2>The Forever Chapter &bull; Season 1</h2>
+          <span class="explore-all">Explore All Episodes &#8250;</span>
+        </div>
+
+        <div class="card-row">
+          <article class="card" data-ep='S1:E01 "Happy Birthday My Love"'>
+            <div class="card-thumb" style="background-image: linear-gradient(135deg, rgba(229,9,20,0.35), rgba(0,0,0,0.5)), url('image/Main photo.png');">
+              <span class="card-n-badge">N</span>
+              <span class="card-ep-tag">EPISODE 1</span>
+              <span class="card-duration">2.24m</span>
+              <div class="card-progress"><span style="width: 75%"></span></div>
+            </div>
+            <div class="card-body">
+              <div class="card-actions">
+                <button class="mini-btn play" type="button">&#9654;</button>
+                <button class="mini-btn" type="button">+</button>
+                <button class="mini-btn" type="button">&#9829;</button>
+              </div>
+              <div class="card-title">1. Happy Birthday, My Love</div>
+              <div class="card-sub">Celebrating the day my favorite human came into the world and changed everything.</div>
+              <div class="card-tags"><span>100% Match</span> Romantic &bull; Heartfelt</div>
+            </div>
+          </article>
+
+          <article class="card" data-ep='S1:E02 "Where It All Began"'>
+            <div class="card-thumb" style="background-image: linear-gradient(135deg, rgba(255,111,165,0.45), rgba(20,20,20,0.75)), url('image/Tilted Selfie Beneath the Greenery.png'); background-position: left center;">
+              <span class="card-n-badge">N</span>
+              <span class="card-ep-tag">EPISODE 2</span>
+              <span class="card-duration">1.44m</span>
+              <div class="card-progress"><span style="width: 100%"></span></div>
+            </div>
+            <div class="card-body">
+              <div class="card-actions">
+                <button class="mini-btn play" type="button">&#9654;</button>
+                <button class="mini-btn" type="button">+</button>
+                <button class="mini-btn" type="button">&#9829;</button>
+              </div>
+              <div class="card-title">2. Where It All Began</div>
+              <div class="card-sub">From the very first hello to the moment we realized this was something extraordinary.</div>
+              <div class="card-tags"><span>99% Match</span> Nostalgic &bull; Sweet</div>
+            </div>
+          </article>
+
+          <article class="card" data-ep='S1:E03 "To Forever & Beyond"'>
+            <div class="card-thumb" style="background-image: linear-gradient(135deg, rgba(44,61,91,0.65), rgba(20,20,20,0.7)), url('image/WhatsApp Image 2026-11-20 at 12.47.43 AM.jpeg'); background-position: right center;">
+              <span class="card-n-badge">N</span>
+              <span class="card-ep-tag">EPISODE 3</span>
+              <span class="card-duration">0.21m</span>
+            </div>
+            <div class="card-body">
+              <div class="card-actions">
+                <button class="mini-btn play" type="button">&#9654;</button>
+                <button class="mini-btn" type="button">+</button>
+                <button class="mini-btn" type="button">&#9829;</button>
+              </div>
+              <div class="card-title">3. To Forever &amp; Beyond</div>
+              <div class="card-sub">Endless conversations at 2 AM, unstoppable laughter, and memories only we understand.</div>
+              <div class="card-tags"><span>100% Match</span> Unfiltered &bull; Cozy</div>
+            </div>
+          </article>
+
+          <article class="card" data-ep='S1:E04 "Adventures With You"'>
+            <div class="card-thumb" style="background-image: linear-gradient(135deg, rgba(232,168,18,0.45), rgba(20,20,20,0.75)), url('image/WhatsApp Image 2026-11-20 at 1.05.49 AM.jpeg'); background-position: center top;">
+              <span class="card-n-badge">N</span>
+              <span class="card-ep-tag">EPISODE 4</span>
+              <span class="card-duration">1.11m</span>
+            </div>
+            <div class="card-body">
+              <div class="card-actions">
+                <button class="mini-btn play" type="button">&#9654;</button>
+                <button class="mini-btn" type="button">+</button>
+                <button class="mini-btn" type="button">&#9829;</button>
+              </div>
+              <div class="card-title">4. Every Trip Is Better With You</div>
+              <div class="card-sub">Getting lost, spontaneous food runs, and turning ordinary days into core memories.</div>
+              <div class="card-tags"><span>98% Match</span> Feel-Good &bull; Fun</div>
+            </div>
+          </article>
+
+          <article class="card" data-ep='S1:E05 "My Safe Place"'>
+            <div class="card-thumb" style="background-image: linear-gradient(135deg, rgba(47,91,58,0.55), rgba(20,20,20,0.75)), url('image/WhatsApp Image 2026-11-20 at 1.04.58 AM.jpeg');">
+              <span class="card-n-badge">N</span>
+              <span class="card-ep-tag">EPISODE 5</span>
+              <span class="card-duration"0.19m</span>
+            </div>
+            <div class="card-body">
+              <div class="card-actions">
+                <button class="mini-btn play" type="button">&#9654;</button>
+                <button class="mini-btn" type="button">+</button>
+                <button class="mini-btn" type="button">&#9829;</button>
+              </div>
+              <div class="card-title">5. You Are My Home</div>
+              <div class="card-sub">No matter how chaotic life gets, being by your side makes everything calm again.</div>
+              <div class="card-tags"><span>100% Match</span> Soulmates &bull; Warm</div>
+            </div>
+          </article>
+
+          
+        </div>
+      </section>
+
+      <section class="row">
+        <div class="row-header">
+          <h2>Top 10 Moments With You</h2>
+          <span class="explore-all">View All &#8250;</span>
+        </div>
+<!-- card photos -->
+        <div class="card-row">
+          <div class="top10-card" data-ep='S1:E01 "First Date Glow"'>
+            <span class="rank-num">1</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(229,9,20,0.4), transparent), url('image/VideoCapture_20261014-000758.jpeg');">
+              <div class="poster-label">Your Smile</div>
+              <div class="poster-sub">TOP #1 TODAY</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E02 "Shopping Spree Memories"'>
+            <span class="rank-num">2</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(33,114,217,0.45), transparent), url('image/20261102_232520.jpeg'); background-position: left center;">
+              <div class="poster-label">Shopping Spree Memories</div>
+              <div class="poster-sub">FAN FAVORITE</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E03 "Unstoppable Laughs"'>
+            <span class="rank-num">3</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(232,168,18,0.45), transparent), url('image/WhatsApp Image 2026-11-19 at 12.39.12 AM.jpeg'); background-position: right center;">
+              <div class="poster-label">Crazy Memories</div>
+              <div class="poster-sub">100% MATCH</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E04 "Quiet Comfort"'>
+            <span class="rank-num">4</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(39,181,98,0.45), transparent), url('image/Snapchat-1097453697.jpeg');">
+              <div class="poster-label">Quiet Hugs</div>
+              <div class="poster-sub">COMFORT WATCH</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E05 "Birthday Surprise"'>
+            <span class="rank-num">5</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(255,111,165,0.45), transparent), url('image/WhatsApp Image 2026-11-19 at 12.15.30 AM.jpeg'); background-position: 35% center;">
+              <div class="poster-label">Birthday Magic</div>
+              <div class="poster-sub">NEW EPISODE</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E06 "Cute us"'>
+            <span class="rank-num">6</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(128,44,155,0.45), transparent), url('image/WhatsApp Image 2026-11-19 at 12.28.49 AM.jpeg'); background-position: 55% center;">
+              <div class="poster-label">Cute us</div>
+              <div class="poster-sub">ON REPEAT</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E07 "The Little Things"'>
+            <span class="rank-num">7</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(44,61,91,0.55), transparent), url('image/20261102_230729.jpeg'); background-position: 60% center;">
+              <div class="poster-label">The Little Things</div>
+              <div class="poster-sub">FEEL-GOOD</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E08 "Our Inside Jokes"'>
+            <span class="rank-num">8</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(232,168,18,0.5), transparent), url('image/Main photo.png'); background-position: 42% center;">
+              <div class="poster-label">Inside Jokes</div>
+              <div class="poster-sub">LAUGH OUT LOUD</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E09 "Always Your Home"'>
+            <span class="rank-num">9</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(47,91,58,0.55), transparent), url('image/Snapchat-2120294948.jpeg'); background-position: 65% center;">
+              <div class="poster-label">Always Your Home</div>
+              <div class="poster-sub">SOULMATES</div>
+            </div>
+          </div>
+
+          <div class="top10-card" data-ep='S1:E10 "Forever Starts Now"'>
+            <span class="rank-num">10</span>
+            <div class="top10-poster" style="background-image: linear-gradient(160deg, rgba(229,9,20,0.45), transparent), url('image/VideoCapture_20261014-000748.jpeg'); background-position: 48% center;">
+              <div class="poster-label">Forever Starts Now</div>
+              <div class="poster-sub">TOP 10 FINALE</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- 4. MORE INFO MODAL -->
+  <div class="modal-backdrop" id="info-modal">
+    <div class="modal-box">
+      <div class="modal-hero">
+        <button class="modal-close" id="close-modal-btn" type="button">&times;</button>
+        <div class="modal-hero-content">
+          <div class="n-series-tag"><span class="n-letter">N</span><span>SERIES</span></div>
+          <div class="hero-script" style="font-size: 52px; margin-bottom: 14px;">Happy Birthday <span>My Love!</span></div>
+          <div class="hero-buttons">
+            <button class="btn btn-play" type="button" id="modal-play-btn">
+              <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>Play Episode 1
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div>
+            <div class="metadata-bar" style="margin-bottom: 12px;">
+              <span class="match-score">100% Match</span>
+              <span>2026</span>
+              <span class="maturity-box">U/A 16+</span>
+              <span>5 Episodes</span>
+              <span class="quality-pill">4K Ultra HD</span>
+            </div>
+            <p style="font-size: 15px; line-height: 1.6; color: #e5e5e5;">
+              A heartfelt tribute to our journey together. Every laugh, every milestone, and every quiet moment captured in one place to remind you how deeply you are loved today and always.
+            </p>
+          </div>
+          <div class="meta-cast" style="margin: 0;">
+            <div><strong>Cast:</strong> <span>Donny & Lavi</span></div>
+            <div><strong>Genres:</strong> <span>Romance, Slice of Life, Feel-Good</span></div>
+            <div><strong>This show is:</strong> <span>Heartfelt, Romantic, Soulful</span></div>
+          </div>
+        </div>
+
+        <div class="ep-list-header">
+          <h3 style="font-size: 20px;">Episodes</h3>
+          <span style="color: #9e9e9e; font-size: 14px;">Season 1: The Forever Chapter</span>
+        </div>
+
+        <div class="ep-item" data-ep='S1:E01 "Happy Birthday My Love"'>
+          <div class="ep-num">1</div>
+          <div class="ep-thumb" style="background-image: url('image/Main photo.png');">&#9654;</div>
+          <div class="ep-info">
+            <div class="ep-info-top"><span>Happy Birthday, My Love</span><span>2.24m</span></div>
+            <p>A special birthday premiere dedicated to my favorite person in the universe.</p>
+          </div>
+        </div>
+
+        <div class="ep-item" data-ep='S1:E02 "Where It All Began"'>
+          <div class="ep-num">2</div>
+          <div class="ep-thumb" style="background-image: url('image/Tilted Selfie Beneath the Greenery.png'); background-position: left center;">&#9654;</div>
+          <div class="ep-info">
+            <div class="ep-info-top"><span>Where It All Began</span><span>1.44m</span></div>
+            <p>Looking back at the sparks, the butterflies, and the start of us.</p>
+          </div>
+        </div>
+
+        <div class="ep-item" data-ep='S1:E03 "To Forever & Beyond"'>
+          <div class="ep-num">3</div>
+          <div class="ep-thumb" style="background-image: url('image/WhatsApp Image 2026-11-20 at 12.47.43 AM.jpeg'); background-position: right center;">&#9654;</div>
+          <div class="ep-info">
+            <div class="ep-info-top"><span>To Forever &amp; Beyond</span><span>0.21m</span></div>
+            <p>Counting down all the dreams we're building together next.</p>
+          </div>
+        </div>
+
+        <div class="ep-item" data-ep='S1:E04 "Adventures With You"'>
+          <div class="ep-num">4</div>
+          <div class="ep-thumb" style="background-image: url('image/WhatsApp Image 2026-11-20 at 1.05.49 AM.jpeg'); background-position: center;">&#9654;</div>
+          <div class="ep-info">
+            <div class="ep-info-top"><span>Every Trip Is Better With You</span><span>1.11m</span></div>
+            <p>Getting lost, spontaneous food runs, and turning ordinary days into core memories.</p>
+          </div>
+        </div>
+
+        <div class="ep-item" data-ep='S1:E05 "My Safe Place"'>
+          <div class="ep-num">5</div>
+          <div class="ep-thumb" style="background-image: url('image/WhatsApp Image 2026-11-20 at 1.04.58 AM.jpeg'); background-position: 65% center;">&#9654;</div>
+          <div class="ep-info">
+            <div class="ep-info-top"><span>You Are My Home</span><span>0.19m</span></div>
+            <p>No matter how chaotic life gets, being by your side makes everything calm again.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. VIDEO PLAYER -->
+  <main id="player" class="screen">
+    <video id="main-video" src="Netflix%20New%20Logo%20Animation%202019_1080p.mp4" playsinline preload="auto"></video>
+    <div class="video-error" id="video-error" role="alert"></div>
+
+    <div class="player-overlay" id="player-overlay">
+      <div class="player-top">
+        <button class="back-btn" type="button" id="back-btn" aria-label="Back">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        </button>
+        <div class="player-title" id="player-title">Happy Birthday My Love <span>S1:E01 "Happy Birthday"</span></div>
+      </div>
+
+      <div class="player-bottom">
+        <div class="seek-row">
+          <input type="range" id="seek" min="0" max="100" value="0" step="0.1" aria-label="Seek">
+          <span class="time" id="time">0:00 / 0:00</span>
+        </div>
+
+        <div class="controls-row">
+          <div class="controls-left">
+            <button class="control" type="button" id="toggle-btn" aria-label="Play or pause">&#9654;</button>
+            <button class="control" type="button" id="rew-btn" title="Rewind 10s">&#8634; 10s</button>
+            <button class="control" type="button" id="fwd-btn" title="Forward 10s">10s &#8635;</button>
+            <button class="control" type="button" id="mute-btn" title="Mute / Unmute">&#128266;</button>
+          </div>
+
+          <div class="controls-right">
+            <button class="control" type="button" id="next-ep-btn">&#9197; Next Episode</button>
+            <button class="control" type="button" id="fullscreen-btn" title="Fullscreen">&#x26F6;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast">Added to My List</div>
+
+  <script>
+    const intro = document.getElementById('intro');
+    const introVideo = document.getElementById('intro-video');
+    const skipBtn = document.getElementById('skip-btn');
+    const unmuteIntroBtn = document.getElementById('unmute-intro-btn');
+
+    const profilesScreen = document.getElementById('profiles');
+    const browseScreen = document.getElementById('browse');
+    const playerScreen = document.getElementById('player');
+    const profileButtons = document.querySelectorAll('.profile');
+    const topNav = document.getElementById('top-nav');
+
+    const mainVideo = document.getElementById('main-video');
+    const overlay = document.getElementById('player-overlay');
+    const seek = document.getElementById('seek');
+    const toggleBtn = document.getElementById('toggle-btn');
+    const timeLabel = document.getElementById('time');
+    const playerTitle = document.getElementById('player-title');
+    const infoModal = document.getElementById('info-modal');
+    const toast = document.getElementById('toast');
+    const videoError = document.getElementById('video-error');
+
+    let introDone = false;
+    let hideTimer = null;
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2400);
+    }
+
+    function showScreen(screen) {
+      [profilesScreen, browseScreen, playerScreen].forEach((s) => s.classList.remove('active'));
+      screen.classList.add('active');
+    }
+
+    function showProfiles() {
+      if (introDone) return;
+      introDone = true;
+      introVideo.pause();
+      intro.classList.add('hidden');
+      showScreen(profilesScreen);
+      setTimeout(() => intro.remove(), 800);
+    }
+
+    introVideo.play().then(() => {
+      unmuteIntroBtn.style.display = 'none';
+    }).catch(() => {
+      introVideo.muted = true;
+      introVideo.play().catch(showProfiles);
+    });
+
+    unmuteIntroBtn.addEventListener('click', () => {
+      introVideo.muted = false;
+      unmuteIntroBtn.style.display = 'none';
+    });
+
+    introVideo.addEventListener('ended', showProfiles);
+    introVideo.addEventListener('error', showProfiles);
+    skipBtn.addEventListener('click', showProfiles);
+
+    setTimeout(() => {
+      if (!introDone && introVideo.readyState === 0) showProfiles();
+    }, 4500);
+
+    browseScreen.addEventListener('scroll', () => {
+      topNav.classList.toggle('scrolled', browseScreen.scrollTop > 30);
+    });
+
+    const colorGradients = {
+      red: 'linear-gradient(145deg, #e50914, #8b050b)',
+      blue: 'linear-gradient(145deg, #2172d9, #10428a)',
+      gold: 'linear-gradient(145deg, #e8a812, #9e6b05)',
+      green: 'linear-gradient(145deg, #27b562, #126b36)'
+    };
+
+    profileButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const name = btn.dataset.profile || 'My Love';
+        const color = btn.dataset.color || 'red';
+        document.getElementById('active-profile-label').textContent = name;
+        document.getElementById('active-mini-avatar').style.background = colorGradients[color];
+        showScreen(browseScreen);
+      });
+    });
+
+    document.getElementById('switch-profile-btn').addEventListener('click', () => {
+      showScreen(profilesScreen);
+    });
+
+    document.getElementById('manage-profiles-btn').addEventListener('click', () => {
+      showToast('Select any profile to enter Netflix');
+    });
+
+    const mylistBtn = document.getElementById('mylist-btn');
+    mylistBtn.addEventListener('click', () => {
+      const active = mylistBtn.classList.toggle('active');
+      mylistBtn.innerHTML = active ? '&#10003;' : '+';
+      showToast(active ? 'Added to My List' : 'Removed from My List');
+    });
+
+    const likeBtn = document.getElementById('like-btn');
+    likeBtn.addEventListener('click', () => {
+      const active = likeBtn.classList.toggle('active');
+      showToast(active ? 'Rated: 100% Couple Goals ♥' : 'Rating removed');
+    });
+
+    document.getElementById('more-info-btn').addEventListener('click', () => {
+      infoModal.classList.add('open');
+    });
+
+    document.getElementById('close-modal-btn').addEventListener('click', () => {
+      infoModal.classList.remove('open');
+    });
+
+    infoModal.addEventListener('click', (e) => {
+      if (e.target === infoModal) infoModal.classList.remove('open');
+    });
+
+    function openPlayer(episodeTitle = 'S1:E01 "Happy Birthday My Love"') {
+      infoModal.classList.remove('open');
+      videoError.classList.remove('visible');
+      const videoSource = episodeTitle.startsWith('S1:E02')
+        ? 'video/where_it_all_begin.mp4'
+        : episodeTitle.startsWith('S1:E03')
+          ? 'video/WhatsApp%20Video%202026-11-19%20at%2011.52.36%20PM.mp4'
+        : episodeTitle.startsWith('S1:E04')
+          ? 'video/WhatsApp%20Video%202026-11-19%20at%2011.57.51%20PM.mp4'
+        : episodeTitle.startsWith('S1:E05')
+          ? 'video/WhatsApp%20Video%202026-11-19%20at%2011.52.38%20PM.mp4'
+        : 'video/WhatsApp%20Video%202026-11-19%20at%2011.57.50%20PM.mp4';
+      let videoStarted = false;
+      const startVideo = () => {
+        if (videoStarted) return;
+        videoStarted = true;
+        mainVideo.currentTime = 0;
+        mainVideo.play().catch(() => {
+          showToast('Unable to play this episode');
+        });
+      };
+      if (mainVideo.getAttribute('src') !== videoSource) {
+        mainVideo.addEventListener('loadeddata', startVideo, { once: true });
+        mainVideo.addEventListener('canplay', startVideo, { once: true });
+        mainVideo.addEventListener('error', () => {
+          videoError.textContent = window.location.protocol === 'file:'
+            ? 'Videos need to be opened through a local server. In VS Code, use Live Server and open the page there.'
+            : 'Unable to load this episode.';
+          videoError.classList.add('visible');
+        }, { once: true });
+        mainVideo.src = videoSource;
+        mainVideo.load();
+        if (mainVideo.readyState >= 2) startVideo();
+      } else {
+        startVideo();
+      }
+      playerTitle.innerHTML = `Happy Birthday My Love <span>${episodeTitle}</span>`;
+      showScreen(playerScreen);
+      wakeControls();
+    }
+
+    document.getElementById('play-btn').addEventListener('click', () => openPlayer());
+    document.getElementById('modal-play-btn').addEventListener('click', () => openPlayer());
+
+    document.querySelectorAll('.card, .ep-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        openPlayer(item.dataset.ep || 'S1:E01 "Happy Birthday"');
+      });
+    });
+
+    document.getElementById('back-btn').addEventListener('click', () => {
+      mainVideo.pause();
+      showScreen(browseScreen);
+    });
+
+    function togglePlay() {
+      if (mainVideo.paused) mainVideo.play();
+      else mainVideo.pause();
+    }
+
+    toggleBtn.addEventListener('click', togglePlay);
+    mainVideo.addEventListener('click', togglePlay);
+
+    document.getElementById('rew-btn').addEventListener('click', () => {
+      mainVideo.currentTime = Math.max(0, mainVideo.currentTime - 10);
+    });
+
+    document.getElementById('fwd-btn').addEventListener('click', () => {
+      mainVideo.currentTime = Math.min(mainVideo.duration || 0, mainVideo.currentTime + 10);
+    });
+
+    const muteBtn = document.getElementById('mute-btn');
+    muteBtn.addEventListener('click', () => {
+      mainVideo.muted = !mainVideo.muted;
+      muteBtn.innerHTML = mainVideo.muted ? '&#128263;' : '&#128266;';
+    });
+
+    document.getElementById('fullscreen-btn').addEventListener('click', () => {
+      if (!document.fullscreenElement) playerScreen.requestFullscreen().catch(() => {});
+      else document.exitFullscreen();
+    });
+
+    document.getElementById('next-ep-btn').addEventListener('click', () => {
+      openPlayer('S1:E02 "Where It All Began"');
+      showToast('Playing Next Episode');
+    });
+
+    mainVideo.addEventListener('play', () => {
+      toggleBtn.innerHTML = '&#10074;&#10074;';
+      wakeControls();
+    });
+
+    mainVideo.addEventListener('pause', () => {
+      toggleBtn.innerHTML = '&#9654;';
+      overlay.classList.remove('hidden');
+      playerScreen.classList.add('controls-visible');
+      clearTimeout(hideTimer);
+    });
+
+    function formatTime(sec) {
+      if (!isFinite(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60).toString().padStart(2, '0');
+      return m + ':' + s;
+    }
+
+    mainVideo.addEventListener('timeupdate', () => {
+      const dur = mainVideo.duration || 0;
+      seek.value = dur ? (mainVideo.currentTime / dur) * 100 : 0;
+      timeLabel.textContent = formatTime(mainVideo.currentTime) + ' / ' + formatTime(dur);
+    });
+
+    seek.addEventListener('input', () => {
+      const dur = mainVideo.duration || 0;
+      mainVideo.currentTime = (seek.value / 100) * dur;
+    });
+
+    function wakeControls() {
+      overlay.classList.remove('hidden');
+      playerScreen.classList.add('controls-visible');
+      clearTimeout(hideTimer);
+      if (!mainVideo.paused) {
+        hideTimer = setTimeout(() => {
+          overlay.classList.add('hidden');
+          playerScreen.classList.remove('controls-visible');
+        }, 2600);
+      }
+    }
+
+    playerScreen.addEventListener('mousemove', wakeControls);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && infoModal.classList.contains('open')) {
+        infoModal.classList.remove('open');
+        return;
+      }
+      if (!playerScreen.classList.contains('active')) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'Escape') {
+        document.getElementById('back-btn').click();
+      } else if (e.key === 'ArrowRight') {
+        mainVideo.currentTime += 10;
+      } else if (e.key === 'ArrowLeft') {
+        mainVideo.currentTime -= 10;
+      }
+    });
+  </script>
+</body>
+</html>
