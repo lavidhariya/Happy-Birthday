@@ -1086,12 +1086,15 @@
         mainVideo.addEventListener('loadeddata', startVideo, { once: true });
         mainVideo.addEventListener('canplay', startVideo, { once: true });
         mainVideo.addEventListener('error', () => {
+          const detail = mainVideo.error
+            ? ` (media error ${mainVideo.error.code})`
+            : '';
           videoError.textContent = window.location.protocol === 'file:'
             ? 'Videos need to be opened through a local server. In VS Code, use Live Server and open the page there.'
-            : 'Unable to load this episode.';
+            : `Unable to load this episode${detail}.`;
           videoError.classList.add('visible');
         }, { once: true });
-        mainVideo.src = videoSource;
+        mainVideo.src = `${videoSource}?v=${Date.now()}`;
         mainVideo.load();
         if (mainVideo.readyState >= 2) startVideo();
       } else {
